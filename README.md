@@ -8,7 +8,15 @@ Se entrega código de frontend, esquema PostgreSQL con RLS y validación segura,
 
 **Configurado:** proyecto Supabase FlotaTrace conectado, tablas y catálogo de ejemplo verificados, RLS activo y función reverse-geocode desplegada. Web publicada: https://rodolfoaaron.github.io/FlotaTrace/ . Repositorio: https://github.com/RodolfoAaron/FlotaTrace .
 
-Las pruebas transaccionales en PostgreSQL comprobaron permisos del operador, hora del servidor, idempotencia, rechazo de duplicados, geocerca, precisión, caducidad, salida, último punto e historial inmutable. Los datos de prueba se revirtieron. Falta crear las cuentas de acceso de la aplicación y asignar sus perfiles. La cámara/GPS físicos y Nominatim con una sesión de usuario requieren una prueba posterior. La verificación JWT heredada permanece activada.
+Las pruebas transaccionales en PostgreSQL comprobaron permisos del operador, hora del servidor, idempotencia, rechazo de duplicados, geocerca, precisión, caducidad, salida, último punto e historial inmutable. Los datos de prueba se revirtieron. La cuenta administradora está activa. El sitio incluye registro público por correo, confirmación obligatoria y perfiles de operador automáticos. Falta configurar SMTP para entregar confirmaciones a correos externos. La cámara/GPS físicos y Nominatim con una sesión de usuario requieren una prueba posterior. La verificación JWT heredada permanece activada.
+
+## Registro de otras cuentas
+
+En la web, pulsa **Crear cuenta**, completa los datos y confirma el correo. La cuenta ingresa como operador. Usa **Reenviar confirmación** si necesitas un enlace nuevo.
+
+**Pendiente de envío externo:** el proyecto usa todavía el correo de prueba de Supabase, limitado a miembros del equipo. Hace falta SMTP para confirmar otros correos. No se ha verificado entrega a correos externos.
+
+Consulta [la configuración y las pruebas del registro](docs/registro_correo.md). El script `supabase/04_self_signup.sql` ya fue aplicado a este proyecto.
 
 ## 1. Abrir la aplicación
 
