@@ -29,20 +29,35 @@
 9. Eliminar catálogo con movimientos: FK restrict impide pérdida de trazabilidad.
 10. Cache y cuota: no accesibles a anon/authenticated; solo service_role en el servidor.
 11. Edge Function sin JWT, con perfil inactivo u origen distinto: rechazada.
-12. Revisar Database > Advisors antes de la entrega. Estas comprobaciones no se ejecutaron contra un backend activo durante la elaboración.
+12. Revisar Database > Advisors antes de la entrega. Las validaciones SQL y RLS indicadas abajo se ejecutaron con transacciones de prueba revertidas. La concurrencia entre dos clientes reales y la función de dirección con una sesión real siguen pendientes.
 
-## Evidencia ejecutada
+## Evidencia y límites de verificación · 11 de noviembre de 2026
 
 | Verificación | Resultado |
 |---|---|
-| Pruebas unitarias core.test.mjs | 10 aprobadas |
-| Sintaxis app.js | Aprobada |
-| Ensayo en navegador, carga de dashboard y mapas | Aprobado |
-| Generación visible del QR de ABC-123 | Aprobada |
-| Entrada local, rechazo duplicado, salida e historial | Aprobados |
-| Móvil físico, permisos de cámara y GPS real | Pendientes |
-| SQL, RLS, Auth, Edge Function y concurrencia contra servidor | Pendientes de configurar Supabase |
-| GitHub Pages y URL | Pendientes de publicación |
+| Pruebas automatizadas de reglas, correo y operación | 19 aprobadas |
+| Sintaxis JavaScript | Aprobada |
+| Navegador: mapa del editor, selección de coordenadas, guardado de almacén de ensayo | Aprobado |
+| Navegador: llegada de ensayo, dirección ficticia y detalle con precisión/radio | Aprobado |
+| Generación de QR, rechazo duplicado y salida en ensayo | Verificados en la revisión inicial; no acreditan uso de cámara física |
+| SQL/RLS: geocerca, secuencia, idempotencia, hora del servidor y permisos | Verificados previamente con transacciones revertidas |
+| Trigger de registro: operador fijo y activación al confirmar correo | Verificado previamente con transacciones revertidas |
+| Inicio de sesión de administrador | Confirmado por el usuario |
+| GitHub Pages | Publicado; verificar el despliegue del commit de esta mejora |
+| Conteo exacto diario | Implementado con count exact y límites del día de Perú; límites horarios probados. Pendiente aceptación con sesión real tras esta mejora |
+| Cámara y GPS en celular físico | Pendientes |
+| Nominatim con sesión real y caso completo ABC-123 / Huancayo | Pendientes |
+| Correo a cuentas externas | Pendiente de configurar SMTP; el formulario no acredita entrega de correo |
+| Concurrencia desde dos clientes reales | Pendiente |
+
+## Mejoras de operación
+
+- Resumen con accesos rápidos, fecha de actualización y botón de recarga.
+- Administrador: selección del centro del almacén sobre mapa, vista del radio y consulta manual de dirección.
+- Historial: detalle completo, etiquetas históricas de vehículo/almacén y nombres de operadores cuando las políticas existentes permiten leerlos. Los operadores siguen viendo solo su propio perfil; los demás se identifican por ID. No se amplían permisos.
+- El contador de hoy consulta el total del servidor; la tabla, filtros y CSV siguen trabajando sobre los registros cargados y lo indican en pantalla.
+- Guía de uso, solución de problemas e integraciones con estados de disponibilidad. La disponibilidad de una biblioteca no acredita una prueba real de su servicio.
+- Se conservan los roles, RLS, controles de GPS y separación del ensayo local.
 
 ## Matriz de evaluación del docente
 
@@ -67,3 +82,4 @@
 7. 5:30-6:00. Mostrar URL/repositorio y explicar que es trazabilidad por puntos, sin GPS continuo ni prueba física del camión.
 
 La demostración real depende de estar dentro del almacén configurado. Fuera de Huancayo, explicar la simulación y acordar con el docente una prueba GPS real en la sede.
+
