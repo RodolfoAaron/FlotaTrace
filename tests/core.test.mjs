@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {distanceMeters,validateFix,validateSequence,parseQR,csvCell} from '../web/core.js';
+const w={lat:-12.0651,lng:-75.2049,radius_m:150,max_accuracy_m:50},now=Date.now();
+test('Haversine: centro y distancia conocida',()=>{assert.equal(distanceMeters(w,w),0);assert.ok(Math.abs(distanceMeters({lat:0,lng:0},{lat:0,lng:1})-111194.9266)<.01);});
+test('Acepta GPS reciente y preciso en el centro',()=>assert.ok(validateFix({...w,accuracy:8,timestamp:now},w,now).ok));
+test('Rechaza precisión insuficiente aunque centro esté dentro',()=>assert.equal(validateFix({...w,accuracy:80,timestamp:now},w,now).ok,false));
+test('Rechaza borde cuyo margen de error queda fuera',()=>assert.equal(validateFix({lat:w.lat+.0013,lng:w.lng,accuracy:20,timestamp:now},w,now).ok,false));
+test('Rechaza ubicación vieja o futura',()=>{for(const timestamp of [now-61000,now+11000])assert.equal(validateFix({...w,accuracy:8,timestamp},w,now).ok,false);});
+test('Rechaza NaN, cero y coordenadas fuera de rango',()=>{for(const accuracy of [0,NaN,Infinity,-1])assert.equal(validateFix({...w,accuracy,timestamp:now},w,now).ok,false);assert.equal(validateFix({...w,lat:91,accuracy:5,timestamp:now},w,now).ok,false);});
+test('Secuencia: primera entrada, salida correcta y nueva entrada',()=>{validateSequence(null,'entrada','a');validateSequence({type:'entrada',warehouse_id:'a'},'salida','a');validateSequence({type:'salida',warehouse_id:'a'},'entrada','b');});
+test('Impide entrada duplicada y salida sin entrada o de otro almacén',()=>{assert.throws(()=>validateSequence({type:'entrada'},'entrada','a'));assert.throws(()=>validateSequence(null,'salida','a'));assert.throws(()=>validateSequence({type:'entrada',warehouse_id:'a'},'salida','b'));});
+test('QR valida namespace y UUID',()=>{assert.equal(parseQR('FLOTA3:11111111-1111-4111-8111-111111111111'),'11111111-1111-4111-8111-111111111111');assert.throws(()=>parseQR('https://malicioso.test'));assert.throws(()=>parseQR('FLOTA3:ABC-123'));});
+test('CSV escapa comillas y fórmulas',()=>{assert.equal(csvCell('a"b'),'"a""b"');assert.equal(csvCell('=1+1'),'"\'=1+1"');});

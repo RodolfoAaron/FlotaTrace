@@ -1,0 +1,9 @@
+-- 1. Crear los usuarios en Authentication > Users > Add user del Dashboard.
+-- 2. Sustituir los UUID por los IDs reales. Ejecutar como propietario en SQL Editor.
+-- 3. No ejecutar este archivo sin reemplazar los valores de ejemplo.
+-- insert into public.profiles(id,display_name,role) values
+-- ('UUID-REAL-DEL-ADMIN','Administrador Grupo 03','admin'),
+-- ('UUID-REAL-DEL-OPERADOR','Operador Grupo 03','operador');
+-- Para revocar acceso: update public.profiles set active=false where id='UUID-REAL';
+-- Para cambiar rol: update public.profiles set role='operador' where id='UUID-REAL';
+-- Los clientes no pueden crear o modificar perfiles. No se usa user_metadata.
