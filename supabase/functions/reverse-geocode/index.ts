@@ -13,7 +13,7 @@ Deno.serve(async(req:Request)=>{
   const {data:{user},error}=await scoped.auth.getUser();if(error||!user)return response({error:'Sesión inválida'},401);
   const {data:profile}=await scoped.from('profiles').select('active').eq('id',user.id).single();if(!profile?.active)return response({error:'Usuario no habilitado'},403);
   const {lat,lng}=await req.json();if(typeof lat!=='number'||typeof lng!=='number'||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)return response({error:'Coordenadas inválidas'},400);
-  const providerKey=Deno.env.get('GEOCODER_API_KEY');
+  const providerKey=Deno.env.get('GEOCODER_API_KEY')?.trim();
   const providerUrl=Deno.env.get('NOMINATIM_URL');
   if(!providerKey&&!providerUrl)return response({error:'Falta configurar la API key del proveedor de direcciones. Contacta al administrador.',code:'GEOCODER_CONFIG'},503);
   const url=new URL(providerUrl||'https://geocode.maps.co/reverse');
@@ -26,8 +26,11 @@ Deno.serve(async(req:Request)=>{
   if(!slot.allowed)return response({error:'Servicio ocupado. Reintenta en dos segundos.'},429);
   const contact=Deno.env.get('NOMINATIM_CONTACT')||'https://github.com/RodolfoAaron/FlotaTrace';
   url.search=new URLSearchParams({format:'jsonv2',lat:String(lat),lon:String(lng),'accept-language':'es',zoom:'18'}).toString();
+  // Use the provider's documented query authentication, tested directly by the owner.
+  // This URL stays server-side: never log it, return it, or follow redirects with the key.
+  if(providerKey&&url.hostname==='geocode.maps.co')url.searchParams.set('api_key',providerKey);
   stage='nominatim-request';
-  const upstream=await fetch(url,{headers:{'User-Agent':`FlotaTrace-Grupo03/1.0 (${contact})`,...(providerKey&&url.hostname==='geocode.maps.co'?{Authorization:`Bearer ${providerKey}`}:{})},signal:AbortSignal.timeout(10000)});
+  const upstream=await fetch(url,{headers:{'User-Agent':`FlotaTrace-Grupo03/1.0 (${contact})`},redirect:'error',signal:AbortSignal.timeout(10000)});
   if(!upstream.ok){console.error(JSON.stringify({event:'geocode_failed',stage:'nominatim-http',status:upstream.status}));return response({error:upstream.status===429?'Nominatim está ocupado. Espera un momento y vuelve a consultar.':'El servicio de direcciones no respondió correctamente. Conserva las coordenadas.',code:'NOMINATIM_HTTP',upstream_status:upstream.status},502);}
   stage='nominatim-response';
   const result=await upstream.json(),address=result.display_name||'';
