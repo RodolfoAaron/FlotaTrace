@@ -6,9 +6,15 @@ Sistema Web de Gestión y Trazabilidad de Flotas Logísticas. Desarrollo corresp
 
 Se entrega código de frontend, esquema PostgreSQL con RLS y validación segura, Edge Function para Nominatim, workflow de GitHub Pages, modelo de datos, arquitectura y guía de demostración.
 
-**Pendiente de activación:** seleccionar/crear el proyecto Supabase dedicado, ejecutar SQL, crear usuarios/perfiles, desplegar la función y publicar el repositorio en GitHub Pages. Repositorio creado: https://github.com/RodolfoAaron/FlotaTrace. La URL pública de la aplicación todavía está pendiente de despliegue. No se ha probado el SQL contra un servidor PostgreSQL ni las integraciones productivas de Auth, cámara física y GPS real. No presentar el ensayo local como prueba de esas integraciones.
+**Configurado:** proyecto Supabase FlotaTrace conectado, tablas y catálogo de ejemplo verificados, RLS activo y función reverse-geocode desplegada. Web publicada: https://rodolfoaaron.github.io/FlotaTrace/ . Repositorio: https://github.com/RodolfoAaron/FlotaTrace .
 
-## 1. Probar el ensayo
+Las pruebas transaccionales en PostgreSQL comprobaron permisos del operador, hora del servidor, idempotencia, rechazo de duplicados, geocerca, precisión, caducidad, salida, último punto e historial inmutable. Los datos de prueba se revirtieron. Falta crear las cuentas de acceso de la aplicación y asignar sus perfiles. La cámara/GPS físicos y Nominatim con una sesión de usuario requieren una prueba posterior. La verificación JWT heredada permanece activada.
+
+## 1. Abrir la aplicación
+
+Web: https://rodolfoaaron.github.io/FlotaTrace/ . El modo conectado usa Supabase; el ensayo mantiene sus datos ficticios separados en este navegador.
+
+### Probar el ensayo local
 
 Requiere Python 3 y navegador con internet para las bibliotecas y mapa.
 
@@ -37,8 +43,8 @@ El proyecto representa una sola empresa. Todos los perfiles activos pertenecen a
 
 1. En Supabase > Edge Functions crear `reverse-geocode`, usando el contenido de `supabase/functions/reverse-geocode/index.ts`.
 2. Configurar los secretos del servidor:
-   - `ALLOWED_ORIGIN`: origen de GitHub Pages, por ejemplo `https://TU_USUARIO.github.io` (sin ruta del repositorio ni barra final).
-   - `NOMINATIM_CONTACT`: correo o URL pública de contacto del equipo para identificar la aplicación.
+   - `ALLOWED_ORIGIN`: opcional. Por defecto usa `https://rodolfoaaron.github.io` (sin ruta del repositorio ni barra final).
+   - `NOMINATIM_CONTACT`: opcional. Por defecto usa la URL pública del repositorio como contacto de la aplicación.
    - `NOMINATIM_URL` es opcional; permite cambiar el proveedor compatible sin publicar otra web. Predeterminado: `https://nominatim.openstreetmap.org/reverse`.
 3. Las variables de proyecto `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` pertenecen al entorno de la función, nunca al frontend. Comprobar que están disponibles allí.
 4. Desplegar con comprobación de JWT habilitada. La función además llama a `getUser()` y comprueba perfil activo. Probar desde una sesión real.
@@ -96,7 +102,7 @@ El frontend presenta las últimas 200 operaciones y permite cargar páginas adic
 | `docs/arquitectura.md` | Diagramas de arquitectura, entidades y operación |
 | `docs/requisitos_y_pruebas.md` | Cobertura RF01-RF11, aceptación y rúbrica |
 | `tests/core.test.mjs` | Pruebas unitarias de geocerca, QR, secuencia y CSV |
-| `Guia_Grupo03_FlotaTrace.pdf` | Desarrollo del proyecto y guía de exposición |
+| `tests/database_rollback.sql` | Pruebas de seguridad y reglas de negocio, con rollback final |
 
 ## 8. Verificaciones
 
