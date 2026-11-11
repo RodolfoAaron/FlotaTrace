@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.8';
-const origin=Deno.env.get('ALLOWED_ORIGIN')||'';
+const origin=Deno.env.get('ALLOWED_ORIGIN')||'https://rodolfoaaron.github.io';
 const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Content-Type':'application/json','Vary':'Origin'};
 const response=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers});
 Deno.serve(async(req:Request)=>{
@@ -17,7 +17,7 @@ Deno.serve(async(req:Request)=>{
   const {data:slot,error:slotError}=await service.rpc('geocode_slot',{p_key:key});if(slotError)throw slotError;
   if(slot.cached)return response({address:slot.cached,cached:true});
   if(!slot.allowed)return response({error:'Servicio ocupado. Reintenta en dos segundos.'},429);
-  const contact=Deno.env.get('NOMINATIM_CONTACT');if(!contact)return response({error:'Falta configurar contacto de la aplicación'},503);
+  const contact=Deno.env.get('NOMINATIM_CONTACT')||'https://github.com/RodolfoAaron/FlotaTrace';if(!contact)return response({error:'Falta configurar contacto de la aplicación'},503);
   const url=new URL(Deno.env.get('NOMINATIM_URL')||'https://nominatim.openstreetmap.org/reverse');
   url.search=new URLSearchParams({format:'jsonv2',lat:String(lat),lon:String(lng),'accept-language':'es',zoom:'18'}).toString();
   const upstream=await fetch(url,{headers:{'User-Agent':`FlotaTrace-Grupo03/1.0 (${contact})`},signal:AbortSignal.timeout(10000)});
