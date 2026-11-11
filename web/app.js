@@ -20,7 +20,7 @@ async function allRows(table,columns,order){let result=[],offset=0;while(true){c
 async function refresh(){
   if(demo){latest=computeLatest();historyDone=true;todayTotal=movements.filter(m=>peruDate(m.created_at)===peruDate(Date.now())).length;}
   else{
-    const data=await Promise.all([allRows('vehicles','*','plate'),allRows('warehouses','*','name'),query(db.from('movements').select('*').order('created_at',{ascending:false}).order('id',{ascending:false}).range(0,199)),query(db.rpc('latest_checkpoints')),countToday(),allRows('profiles','id,name','id')]);
+    const data=await Promise.all([allRows('vehicles','*','plate'),allRows('warehouses','*','name'),query(db.from('movements').select('*').order('created_at',{ascending:false}).order('id',{ascending:false}).range(0,199)),query(db.rpc('latest_checkpoints')),countToday(),allRows('profiles','id,display_name','id')]);
     [vehicles,warehouses,movements,latest,todayTotal,operators]=data;historyDone=movements.length<200;
   }
   $('load-error').hidden=true;$('updated-at').textContent='Actualizado: '+time(Date.now());render();
@@ -50,7 +50,7 @@ function renderMap(){if(!window.L){$('map').textContent='No se pudo cargar Leafl
 async function navigate(name){if(page==='checkpoint'&&name!=='checkpoint')await stopCamera();page=name;document.querySelectorAll('.page').forEach(e=>e.hidden=e.id!==name);document.querySelectorAll('nav button').forEach(e=>e.classList.toggle('active',e.dataset.page===name));$('page-title').textContent=titles[name];if(name==='dashboard')renderMap();if(name==='services')renderServices();}
 async function enter(isDemo){demo=isDemo;role='admin';user={id:'operador-ensayo',email:'Ensayo local'};profileName='Operador de ensayo';
   if(demo){operators=[];let d;try{d=JSON.parse(localStorage.getItem('flota3-demo-v1'));}catch{}d=d||initialDemo();({vehicles,warehouses,movements}=d);}
-  else{const u=await query(db.auth.getUser());user=u.user;if(!user.email_confirmed_at)throw Error('Confirma primero tu correo para acceder a FlotaTrace.');const profile=await query(db.from('profiles').select('role,active,name').eq('id',user.id).maybeSingle());if(!profile)throw Error('Tu cuenta existe, pero falta habilitar su perfil en FlotaTrace. Contacta al administrador.');if(!profile.active)throw Error('Tu cuenta está deshabilitada. Contacta al administrador.');role=profile.role;profileName=profile.name||user.email;}
+  else{const u=await query(db.auth.getUser());user=u.user;if(!user.email_confirmed_at)throw Error('Confirma primero tu correo para acceder a FlotaTrace.');const profile=await query(db.from('profiles').select('role,active,display_name').eq('id',user.id).maybeSingle());if(!profile)throw Error('Tu cuenta existe, pero falta habilitar su perfil en FlotaTrace. Contacta al administrador.');if(!profile.active)throw Error('Tu cuenta está deshabilitada. Contacta al administrador.');role=profile.role;profileName=profile.display_name||user.email;}
   $('login').hidden=true;$('app').hidden=false;$('mode').textContent=demo?'Ensayo local':role==='admin'?'Administrador':'Operador';$('identity').textContent=user.email;
   $('demo-warning').hidden=!demo;$('demo-qr').hidden=!demo;$('demo-gps').hidden=!demo;document.querySelectorAll('.admin-only').forEach(e=>e.hidden=role!=='admin');
   try{await refresh();}catch(e){$('load-error').hidden=false;$('load-error').textContent='No se pudieron cargar los datos: '+e.message;throw e;}
@@ -99,7 +99,7 @@ if(configured&&window.supabase){db=supabase.createClient(cfg.url,cfg.publishable
 
 
 async function countToday(){const {from,to}=peruDayBounds();const {count,error}=await db.from('movements').select('id',{count:'exact',head:true}).gte('created_at',from).lt('created_at',to);if(error)throw Error('No se pudo consultar el total diario: '+error.message);return count??0;}
-function operatorLabel(m){const name=m.operator_id===user?.id?profileName:operators.find(p=>p.id===m.operator_id)?.name;return name?esc(name)+(m.operator_id===user?.id?' (tú)':''):`<span title="${esc(m.operator_id)}">Operador · ${esc(String(m.operator_id).slice(0,8))}</span>`;}
+function operatorLabel(m){const name=m.operator_id===user?.id?profileName:operators.find(p=>p.id===m.operator_id)?.display_name;return name?esc(name)+(m.operator_id===user?.id?' (tú)':''):`<span title="${esc(m.operator_id)}">Operador · ${esc(String(m.operator_id).slice(0,8))}</span>`;}
 $('refresh-data').onclick=()=>run(async()=>{$('refresh-data').disabled=true;try{await refresh();toast('Datos actualizados.');}finally{$('refresh-data').disabled=false;}});
 $('quick-vehicle').onclick=()=>run(()=>openEditor('vehicle'));
 $('quick-warehouse').onclick=()=>run(()=>openEditor('warehouse'));
