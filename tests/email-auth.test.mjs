@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validateRegistration,authErrorMessage} from '../web/auth-email.js';
+const input={name:' Ana ',email:' ANA@EXAMPLE.COM ',password:'test-password-123',confirmation:'test-password-123'};
+test('Normaliza nombre y correo, conserva contraseña',()=>assert.deepEqual(validateRegistration(input),{name:'Ana',email:'ana@example.com',password:input.password}));
+test('Rechaza correos inválidos y nombre vacío',()=>{for(const email of ['','ana','ana@x','ana x@example.com'])assert.throws(()=>validateRegistration({...input,email}));assert.throws(()=>validateRegistration({...input,name:' '}));});
+test('No permite contraseñas cortas ni confirmación distinta',()=>{assert.throws(()=>validateRegistration({...input,password:'abc',confirmation:'abc'}));assert.throws(()=>validateRegistration({...input,confirmation:'otra'}));});
+test('No oculta el límite de correo de prueba del proveedor',()=>assert.match(authErrorMessage({code:'email_address_not_authorized'}),/SMTP/));
+test('Correo sin confirmar ofrece reenvío',()=>assert.match(authErrorMessage({code:'email_not_confirmed'}),/Reenviar/));
+test('Límites y credenciales tienen mensajes claros',()=>{assert.match(authErrorMessage({code:'over_email_send_rate_limit'}),/límite/);assert.equal(authErrorMessage({code:'invalid_credentials'}),'Correo o contraseña incorrectos.');});
