@@ -1,0 +1,41 @@
+-- Pruebas aisladas: ningún usuario, perfil ni movimiento de ensayo se conserva.
+begin;
+insert into auth.users(id) values('33333333-3333-4333-8333-333333333333');
+insert into public.profiles(id,display_name,role) values('33333333-3333-4333-8333-333333333333','Prueba transaccional','operador');
+set local role authenticated;
+set local request.jwt.claim.sub='33333333-3333-4333-8333-333333333333';
+do $$
+declare first_m public.movements; retry_m public.movements; last_m public.movements; req uuid:=gen_random_uuid(); rejected boolean;
+begin
+ assert flota_private.user_role()='operador', 'No reconoce el rol';
+ assert (select count(*) from public.vehicles where plate='ABC-123')=1, 'No puede leer vehículo';
+ rejected:=false;
+ begin insert into public.vehicles(plate,brand,model,year,status) values('TST-003','Prueba','Prueba',2020,'activo'); exception when insufficient_privilege then rejected:=true; end;
+ assert rejected,'RLS permite CRUD al operador';
+ select * into first_m from public.record_movement(req,'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','entrada',-12.0651,-75.2049,8,clock_timestamp(),'Prueba que será revertida');
+ assert first_m.operator_id=auth.uid(),'Operador incorrecto';
+ assert first_m.distance_m<1,'Distancia incorrecta';
+ assert abs(extract(epoch from clock_timestamp()-first_m.created_at))<5,'Hora de servidor incorrecta';
+ select * into retry_m from public.record_movement(req,'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','entrada',-12.0651,-75.2049,8,clock_timestamp(),'Reintento');
+ assert retry_m.id=first_m.id,'Reintento duplicado';
+ rejected:=false;
+ begin perform public.record_movement(gen_random_uuid(),'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','entrada',-12.0651,-75.2049,8,clock_timestamp(),''); exception when others then if sqlerrm like 'Entrada duplicada:%' then rejected:=true;else raise;end if;end;
+ assert rejected,'Acepta entrada duplicada';
+ rejected:=false;
+ begin perform public.record_movement(gen_random_uuid(),'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','salida',-11,-75,8,clock_timestamp(),''); exception when others then if sqlerrm like 'Fuera de geocerca%' then rejected:=true;else raise;end if;end;
+ assert rejected,'Acepta fuera de geocerca';
+ rejected:=false;
+ begin perform public.record_movement(gen_random_uuid(),'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','salida',-12.0651,-75.2049,80,clock_timestamp(),''); exception when others then if sqlerrm like 'Coordenadas o precisi%' then rejected:=true;else raise;end if;end;
+ assert rejected,'Acepta precisión insuficiente';
+ rejected:=false;
+ begin perform public.record_movement(gen_random_uuid(),'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','salida',-12.0651,-75.2049,8,clock_timestamp()-interval '2 minutes',''); exception when others then if sqlerrm like 'Ubicaci%n vencida%' then rejected:=true;else raise;end if;end;
+ assert rejected,'Acepta GPS vencido';
+ select * into last_m from public.record_movement(gen_random_uuid(),'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','salida',-12.0651,-75.2049,8,clock_timestamp(),'Prueba revertida');
+ assert last_m.type='salida','No registra salida';
+ assert (select id from public.latest_checkpoints() where vehicle_id=last_m.vehicle_id)=last_m.id,'Último punto incorrecto';
+ rejected:=false;
+ begin update public.movements set address='alterado' where id=first_m.id;exception when insufficient_privilege then rejected:=true;end;
+ assert rejected,'Permite alterar historial';
+end $$;
+rollback;
+select 'APROBADAS: RLS operador, registro, hora servidor, idempotencia, duplicados, geocerca, precisión, caducidad, salida, último punto e historial inmutable. Todo el ensayo fue revertido.' as resultado;
